@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.feitui.mapper.FeatureMapper">
+
+    <resultMap id="FeatureMap" type="com.feitui.entity.Feature">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="icon" property="icon"/>
+        <result column="tags" property="tags"/>
+        <result column="sort" property="sort"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="FeatureMap">
+        SELECT * FROM t_feature WHERE status = 1 ORDER BY sort ASC
+    </select>
+
+    <select id="selectById" resultMap="FeatureMap">
+        SELECT * FROM t_feature WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.feitui.entity.Feature" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_feature (title, description, icon, tags, sort, status)
+        VALUES (#{title}, #{description}, #{icon}, #{tags}, #{sort}, #{status})
+    </insert>
+
+    <update id="updateById" parameterType="com.feitui.entity.Feature">
+        UPDATE t_feature
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="icon != null">icon = #{icon},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_feature WHERE id = #{id}
+    </delete>
+</mapper>

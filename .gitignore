@@ -1,0 +1,23 @@
+# ---------- 依赖与构建产物 ----------
+node_modules/
+dist/
+target/
+*.local
+
+# ---------- 日志 ----------
+*.log
+logs/
+*.pid
+
+# ---------- IDE / 系统文件 ----------
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# ---------- 敏感配置（含数据库等密钥，勿提交） ----------
+**/application.yml
+**/application-*.yml
+*.env
+.env.*

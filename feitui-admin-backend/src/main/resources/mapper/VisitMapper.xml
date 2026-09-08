@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.feitui.admin.mapper.VisitMapper">
+
+    <select id="findBySession" resultType="com.feitui.admin.entity.Visit">
+        SELECT id, visitor_id, session_id, ip, referrer, source, channel, device, browser, os,
+               landing_page, first_time, last_active, pv
+        FROM t_visit WHERE session_id = #{sessionId} LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.feitui.admin.entity.Visit" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_visit (visitor_id, session_id, ip, referrer, source, channel, device, browser, os,
+                             landing_page, first_time, last_active, pv)
+        VALUES (#{visitorId}, #{sessionId}, #{ip}, #{referrer}, #{source}, #{channel}, #{device}, #{browser},
+                #{os}, #{landingPage}, #{firstTime}, #{lastActive}, 1)
+    </insert>
+
+    <update id="updateHeartbeat">
+        UPDATE t_visit SET last_active = #{lastActive} WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="bumpPv">
+        UPDATE t_visit SET pv = pv + 1, last_active = #{lastActive} WHERE session_id = #{sessionId}
+    </update>
+
+    <select id="totalPv" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(pv), 0) FROM t_visit
+    </select>
+
+    <select id="totalUv" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT visitor_id) FROM t_visit
+    </select>
+
+    <!-- 在线人数 = 最近N分钟内活跃的独立访客数，同一人多会话只算1 -->
+    <select id="onlineCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT visitor_id) FROM t_visit WHERE last_active &gt;= #{since}
+    </select>
+
+    <select id="dayPv" resultType="java.lang.Integer">
+        SELECT PV FROM t_visit_day WHERE stat_date = #{date}
+    </select>
+
+    <select id="dayUv" resultType="java.lang.Integer">
+        SELECT UV FROM t_visit_day WHERE stat_date = #{date}
+    </select>
+
+    <!-- 某日活跃的独立访客数(按访客去重) -->
+    <select id="activeUv" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT visitor_id) FROM t_visit WHERE last_active &gt;= #{since}
+    </select>
+
+    <!-- 区间内按日统计活跃独立访客数(趋势图"访客数") -->
+    <select id="activeUvByDay" resultType="java.util.Map">
+        SELECT DATE(last_active) AS date, COUNT(DISTINCT visitor_id) AS uv
+        FROM t_visit
+        WHERE last_active &gt;= #{start} AND last_active &lt; #{end}
+        GROUP BY DATE(last_active)
+    </select>
+
+    <select id="groupByChannel" resultType="java.util.Map">
+        SELECT channel AS name, COUNT(*) AS value
+        FROM t_visit
+        WHERE last_active &gt;= #{since}
+        GROUP BY channel
+        ORDER BY value DESC
+    </select>
+
+    <select id="recentDays" resultType="java.util.Map">
+        SELECT stat_date AS date, PV AS pv, UV AS uv
+        FROM t_visit_day
+        WHERE stat_date &gt;= #{start} AND stat_date &lt;= #{end}
+        ORDER BY stat_date ASC
+    </select>
+
+    <insert id="upsertDay">
+        INSERT INTO t_visit_day (stat_date, pv, uv)
+        VALUES (#{date}, #{pv}, #{uv})
+        ON DUPLICATE KEY UPDATE pv = pv + #{pv}, uv = uv + #{uv}
+    </insert>
+
+    <!-- 实时在线访客表：同一访客多个会话只显示其最近活跃的一条 -->
+    <select id="onlineList" resultType="java.util.Map">
+        SELECT visitor_id, channel, device, browser, landing_page, last_active, pv
+        FROM (
+            SELECT visitor_id, channel, device, browser, landing_page, last_active, pv,
+                   ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY last_active DESC, session_id DESC) rn
+            FROM t_visit
+            WHERE last_active &gt;= #{since}
+        ) t
+        WHERE t.rn = 1
+        ORDER BY t.last_active DESC
+        LIMIT 50
+    </select>
+
+</mapper>

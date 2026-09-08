@@ -1,0 +1,220 @@
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-body;
+  background: $cyber-bg-dark;
+  color: $text-primary;
+  line-height: 1.8;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app-container {
+  min-height: 100vh;
+  background: $gradient-dark;
+  position: relative;
+}
+
+#app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(14, 109, 240, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(79, 124, 255, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: $transition-fast;
+
+  &:hover {
+    color: lighten($primary-color, 15%);
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 0.5em;
+  color: $text-primary;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(14, 109, 240, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 109, 240, 0.35);
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(14, 109, 240, 0.55);
+  }
+}
+
+.el-button {
+  &.cyber-btn {
+    background: $gradient-cyber;
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 12px 32px;
+    border-radius: $border-radius;
+    transition: $transition-smooth;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+      transition: left 0.5s;
+    }
+
+    &:hover::before {
+      left: 100%;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(14, 109, 240, 0.3);
+    }
+  }
+
+  &.cyber-btn-outline {
+    background: #ffffff;
+    border: 2px solid $primary-color;
+    color: $primary-color;
+    font-weight: 700;
+    padding: 12px 32px;
+    border-radius: $border-radius;
+    transition: $transition-smooth;
+
+    &:hover {
+      background: rgba(14, 109, 240, 0.08);
+      box-shadow: 0 8px 20px rgba(14, 109, 240, 0.2);
+    }
+  }
+}
+
+.el-input, .el-textarea {
+  .el-input__wrapper {
+    background: $cyber-bg-deep;
+    border: 1px solid $cyber-border;
+    border-radius: $border-radius;
+    box-shadow: none;
+
+    &:hover {
+      border-color: $primary-color;
+    }
+
+    &.is-focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 1px $primary-color;
+    }
+  }
+
+  .el-input__inner {
+    color: $text-primary;
+
+    &::placeholder {
+      color: $text-muted;
+    }
+  }
+}
+
+.section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 64px;
+
+  h2 {
+    font-size: 38px;
+    @include gradient-text;
+    margin-bottom: 14px;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 16px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .breadcrumb {
+    margin-top: 16px;
+    font-size: 14px;
+    color: $text-muted;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.5s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    h2 {
+      font-size: 28px;
+    }
+  }
+}

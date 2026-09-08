@@ -1,0 +1,53 @@
+// 浅色科技白底主题 —— 参考 cybermindpro.com 风格
+$primary-color: #0e6df0;          // 主色：科技蓝 相关 #0575e6
+$secondary-color: #4f7cff;        // 辅助色 蓝紫 #7b68ee 附近
+$accent-color: #2aa876;           // 强调绿
+$danger-color: #f43f5e;
+$warning-color: #f97316;
+
+$cyber-bg-dark: #f8fafc;          // 页面浅灰蓝底(参考站背景 #f8fafc)
+$cyber-bg-deep: #ffffff;          // 卡片白底
+$cyber-bg-card: #ffffff;          // 卡片背景
+$cyber-border: #e2e8f0;           // 浅色边框
+$cyber-glow: 0 8px 24px rgba(14, 109, 240, 0.08);
+
+$text-primary: #0f172a;           // 主文字深色
+$text-secondary: #475569;         // 次要文字
+$text-muted: #94a3b8;             // 浅文字
+
+// Hero 深蓝渐变(参考站 #021b79 → #0575e6)
+$gradient-cyber: linear-gradient(135deg, #0575e6 0%, #021b79 100%);
+$gradient-hero: linear-gradient(135deg, #021b79 0%, #0575e6 100%);
+$gradient-card: linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%);
+$gradient-dark: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+
+$font-family: 'Dosis', 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+$font-body: 'Cabin', 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+$border-radius: 14px;
+$border-radius-lg: 24px;
+$border-radius-sm: 8px;
+
+$transition-fast: all 0.3s ease;
+$transition-smooth: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+@mixin cyber-border {
+  border: 1px solid $cyber-border;
+  box-shadow: $cyber-glow;
+}
+
+@mixin cyber-card {
+  @include cyber-border;
+  background: $cyber-bg-card;
+  border-radius: $border-radius;
+}
+
+@mixin glow-text {
+  text-shadow: 0 0 14px rgba(14, 109, 240, 0.35);
+}
+
+@mixin gradient-text {
+  background: linear-gradient(135deg, #0575e6 0%, #021b79 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

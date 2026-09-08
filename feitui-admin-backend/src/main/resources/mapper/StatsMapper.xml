@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.feitui.mapper.StatsMapper">
+
+    <resultMap id="StatsMap" type="com.feitui.entity.Stats">
+        <id column="id" property="id"/>
+        <result column="stat_key" property="statKey"/>
+        <result column="stat_value" property="statValue"/>
+        <result column="stat_label" property="statLabel"/>
+        <result column="description" property="description"/>
+        <result column="sort" property="sort"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="StatsMap">
+        SELECT * FROM t_stats ORDER BY sort ASC
+    </select>
+
+    <select id="selectByKey" resultMap="StatsMap">
+        SELECT * FROM t_stats WHERE stat_key = #{statKey}
+    </select>
+
+    <insert id="insert" parameterType="com.feitui.entity.Stats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_stats (stat_key, stat_value, stat_label, description, sort)
+        VALUES (#{statKey}, #{statValue}, #{statLabel}, #{description}, #{sort})
+    </insert>
+
+    <update id="updateByKey" parameterType="com.feitui.entity.Stats">
+        UPDATE t_stats
+        <set>
+            <if test="statValue != null">stat_value = #{statValue},</if>
+            <if test="statLabel != null">stat_label = #{statLabel},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="sort != null">sort = #{sort},</if>
+        </set>
+        WHERE stat_key = #{statKey}
+    </update>
+</mapper>

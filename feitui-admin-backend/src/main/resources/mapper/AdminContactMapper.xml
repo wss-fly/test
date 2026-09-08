@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.feitui.admin.mapper.AdminContactMapper">
+
+    <sql id="baseCols">
+        id, name, phone, email, company, platform, requirement, status, remark, create_time, update_time
+    </sql>
+
+    <select id="page" resultType="com.feitui.admin.entity.Contact">
+        SELECT <include refid="baseCols"/>
+        FROM t_contact
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR phone LIKE CONCAT('%', #{keyword}, '%')
+                     OR email LIKE CONCAT('%', #{keyword}, '%') OR company LIKE CONCAT('%', #{keyword}, '%')
+                     OR requirement LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="findById" resultType="com.feitui.admin.entity.Contact">
+        SELECT <include refid="baseCols"/> FROM t_contact WHERE id = #{id}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE t_contact SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <update id="updateRemark">
+        UPDATE t_contact SET remark = #{remark} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_contact WHERE id = #{id}
+    </delete>
+
+    <select id="totalCount" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_contact
+    </select>
+
+    <select id="todayCount" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM t_contact WHERE DATE(create_time) = #{today}
+    </select>
+
+    <select id="recentList" resultType="com.feitui.admin.entity.Contact">
+        SELECT <include refid="baseCols"/> FROM t_contact ORDER BY create_time DESC LIMIT #{limit}
+    </select>
+
+    <select id="countByStatus" resultType="java.util.Map">
+        SELECT status, COUNT(*) AS cnt FROM t_contact GROUP BY status
+    </select>
+
+</mapper>

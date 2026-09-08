@@ -1,0 +1,45 @@
+:root {
+  --ft-blue: #2b7cf7;
+  --ft-blue-light: #e8f1ff;
+  --ft-primary: #2b7cf7;
+  --ft-bg: #f4f7fc;
+  --ft-text: #1f2d3d;
+  --ft-text-2: #6b7a90;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  color: var(--ft-text);
+  background: var(--ft-bg);
+}
+
+/* Element Plus 主色调整 */
+.el-button--primary {
+  --el-button-bg-color: var(--ft-primary);
+  --el-button-border-color: var(--ft-primary);
+  --el-button-hover-bg-color: #4a93ff;
+  --el-button-hover-border-color: #4a93ff;
+}
+
+.el-card {
+  border-radius: 10px;
+  border: 1px solid #e6edf7;
+  box-shadow: 0 2px 10px rgba(43, 124, 247, 0.04);
+}
+
+.page-container {
+  padding: 16px;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #c6d6ef; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
