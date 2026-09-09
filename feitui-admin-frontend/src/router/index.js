@@ -26,6 +26,12 @@ const routes = [
         meta: { title: '在线咨询管理' }
       },
       {
+        path: 'videos',
+        name: 'VideoManage',
+        component: () => import('@/views/VideoManage.vue'),
+        meta: { title: '视频管理' }
+      },
+      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/Users.vue'),

@@ -26,6 +26,10 @@
           <el-icon><ChatDotRound /></el-icon>
           <span>在线咨询管理</span>
         </el-menu-item>
+        <el-menu-item index="/videos">
+          <el-icon><VideoPlay /></el-icon>
+          <span>视频管理</span>
+        </el-menu-item>
         <el-menu-item index="/users" v-if="isSuper">
           <el-icon><UserFilled /></el-icon>
           <span>用户管理</span>

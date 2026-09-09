@@ -19,13 +19,17 @@
         SELECT * FROM t_video WHERE status = 1 ORDER BY sort ASC
     </select>
 
+    <select id="selectAllForAdmin" resultMap="VideoMap">
+        SELECT * FROM t_video ORDER BY sort ASC, id ASC
+    </select>
+
     <select id="selectById" resultMap="VideoMap">
         SELECT * FROM t_video WHERE id = #{id}
     </select>
 
-    <insert id="insert" parameterType="com.feitui.entity.Video" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_video (title, description, video_url, cover_image, duration, sort, status)
-        VALUES (#{title}, #{description}, #{videoUrl}, #{coverImage}, #{duration}, #{sort}, #{status})
+    <insert id="insert" parameterType="com.feitui.entity.Video">
+        INSERT INTO t_video (id, title, description, video_url, cover_image, duration, sort, status)
+        VALUES (#{id}, #{title}, #{description}, #{videoUrl}, #{coverImage}, #{duration}, #{sort}, #{status})
     </insert>
 
     <update id="updateById" parameterType="com.feitui.entity.Video">
@@ -45,4 +49,12 @@
     <delete id="deleteById">
         DELETE FROM t_video WHERE id = #{id}
     </delete>
+
+    <select id="selectIds" resultType="java.lang.Integer">
+        SELECT id FROM t_video ORDER BY id ASC
+    </select>
+
+    <update id="shiftIdDown">
+        UPDATE t_video SET id = id - 1 WHERE id > #{id}
+    </update>
 </mapper>

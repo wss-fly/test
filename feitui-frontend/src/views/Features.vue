@@ -4,7 +4,6 @@
     
     <!-- Page Hero -->
     <section class="page-hero">
-      <div class="hero-bg"></div>
       <div class="hero-content">
         <h1>{{ t('features.pageTitle') }}</h1>
         <div class="breadcrumb">
@@ -301,23 +300,12 @@ const detailedFeatures = computed(() => [
 }
 
 .page-hero {
-  position: relative;
-  height: 300px;
+  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-}
-
-.hero-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(14, 109, 240, 0.08) 0%, transparent 100%),
-              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23ffffff" width="1200" height="400"/><path d="M0,200 Q300,100 600,200 T1200,200" stroke="%230e6df0" fill="none" stroke-width="1" opacity="0.3"/><path d="M0,250 Q300,150 600,250 T1200,250" stroke="%234f7cff" fill="none" stroke-width="1" opacity="0.3"/></svg>');
-  background-size: cover;
+  position: relative;
+  background: linear-gradient(180deg, rgba(14, 109, 240, 0.06) 0%, transparent 100%);
 }
 
 .hero-content {

@@ -26,3 +26,12 @@ export const getContactDetail = (id) => request({ url: `/admin/contact/${id}`, m
 export const updateContactStatus = (id, status) => request({ url: `/admin/contact/${id}/status`, method: 'put', params: { status } })
 export const updateContactRemark = (id, remark) => request({ url: `/admin/contact/${id}/remark`, method: 'put', data: { remark } })
 export const deleteContact = (id) => request({ url: `/admin/contact/${id}`, method: 'delete' })
+
+// 视频管理
+export const getVideoAdminPage = (params) => request({ url: '/admin/video/page', method: 'get', params })
+export const createVideo = (data) => request({ url: '/admin/video', method: 'post', data })
+export const updateVideo = (id, data) => request({ url: `/admin/video/${id}`, method: 'put', data })
+export const deleteVideo = (id) => request({ url: `/admin/video/${id}`, method: 'delete' })
+
+// 阿里云 OSS 直传：获取预签名上传地址
+export const getOssPresign = (data) => request({ url: '/admin/oss/presign', method: 'post', data })

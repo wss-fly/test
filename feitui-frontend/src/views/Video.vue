@@ -4,7 +4,6 @@
     
     <!-- Page Hero -->
     <section class="page-hero">
-      <div class="hero-bg"></div>
       <div class="hero-content">
         <h1>{{ t('video.mainTitle') }}</h1>
         <div class="breadcrumb">
@@ -114,6 +113,7 @@
                 v-if="pendingExtract[index]"
                 :ref="(el) => setExtractVideoRef(index, el)"
                 class="extract-video"
+                crossorigin="anonymous"
                 :src="video.videoSrc"
                 preload="metadata"
                 muted
@@ -248,9 +248,13 @@ import NavBar from '@/components/NavBar.vue'
 import Footer from '@/components/Footer.vue'
 import { VideoPlay, Calendar, CircleCheck, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { useI18nStore } from '@/i18n'
+import { getVideoList } from '@/api'
 
 const i18n = useI18nStore()
 const { t } = i18n
+
+// 后端 /video/list 返回的视频数据（按 sort 排序）。为空时回退到下方的本地硬编码配置，保证可用
+const remoteVideos = ref([])
 
 const currentIndex = ref(0)
 const activeFaq = ref([0])
@@ -281,7 +285,24 @@ const DEMO_FALLBACK = {
        poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg' }
 }
 
-const videoList = computed(() => [
+const videoList = computed(() => {
+  // 优先使用后端 /video/list 返回的视频（视频文件存放在阿里云OSS，地址由 t_video 表管理）
+  if (remoteVideos.value.length) {
+    return remoteVideos.value.map((it) => ({
+      title: it.title || '',
+      description: it.description || '',
+      badge: '',
+      videoSrc: it.videoUrl,
+      // 若后台没配封面图，poster 置空 → 走抽帧逻辑从视频本身取封面（前提是 OSS 已开 CORS）
+      poster: it.coverImage || '',
+      fallbackSrc: null,
+      fallbackPoster: null,
+      // 优先用真实时长（displayDuration 会先读抽帧得到的秒数），无数据时用表里的时长文案
+      duration: it.duration || ''
+    }))
+  }
+  // 回退：无接口数据（开发/测试/接口异常）时使用本地 public/videos + i18n 文案
+  return [
   {
     title: t('video.video1Title'),
     description: t('video.video1Desc'),
@@ -342,7 +363,8 @@ const videoList = computed(() => [
     poster: `${LOCAL_VIDEO_PREFIX}6.jpg`,
     fallbackPoster: DEMO_FALLBACK['6'].poster
   }
-])
+  ]
+})
 
 const walkthroughSteps = computed(() => [
   { title: t('video.walkthroughStep1Title'), desc: t('video.walkthroughStep1Desc') },
@@ -681,7 +703,23 @@ const onTouchEnd = (e) => {
   startAutoPlay()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 优先拉取后端 /video/list（视频存于阿里云OSS）；失败/为空则回退本地配置
+  try {
+    const res = await getVideoList()
+    if (res && res.code === 200 && Array.isArray(res.data) && res.data.length) {
+      remoteVideos.value = res.data
+      videoDurations.clear()
+    }
+  } catch (e) { /* 接口异常：沿用本地回退 */ }
+  probeIndex = 0
+  // 后台只传视频、未配封面图：空 poster 的 <img> 不会触发 error 事件，
+  // 需主动引导这些卡片进入抽帧流程，从视频本身生成封面
+  requestAnimationFrame(() => {
+    videoList.value.forEach((v, idx) => {
+      if (!v.poster) onCoverDetectorError(idx, v)
+    })
+  })
   startAutoPlay()
   probeDurationMeta()
 })
@@ -749,23 +787,13 @@ const handleDialogClose = () => {
 }
 
 .page-hero {
-  position: relative;
-  height: 300px;
+  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   overflow: hidden;
-}
-
-.hero-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(14, 109, 240, 0.08) 0%, transparent 100%),
-              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect fill="%23ffffff" width="1200" height="400"/><path d="M0,200 Q300,100 600,200 T1200,200" stroke="%230e6df0" fill="none" stroke-width="1" opacity="0.3"/><path d="M0,250 Q300,150 600,250 T1200,250" stroke="%234f7cff" fill="none" stroke-width="1" opacity="0.3"/></svg>');
-  background-size: cover;
+  background: linear-gradient(180deg, rgba(14, 109, 240, 0.06) 0%, transparent 100%);
 }
 
 .hero-content {
