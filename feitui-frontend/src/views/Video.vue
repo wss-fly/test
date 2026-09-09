@@ -506,18 +506,34 @@ const onCoverLoaded = (index, url) => {
 
 // 本地 jpg 不存在 → 优先读取缓存抽帧图，没有再从本地 mp4 自动抽帧
 // （本地 mp4 比远程封面更快更稳定，避免外网慢导致封面长时间空白）
-const onCoverDetectorError = (index, video) => {
+// 本地 jpg 不存在 → 探测本地视频是否真实存在：
+// 注意 dev 环境 Vite 对缺失静态资源会返回 index.html(200, text/html)，而非 404，
+// 因此不能用 HTTP 状态、也不能靠 <video> 的 error 判断，必须检查响应 Content-Type。
+const onCoverDetectorError = async (index, video) => {
   const current = coverStatus.get(index)
   // 如果已经试过 fallback 或已经抽帧，不要再重试
   if (current && current !== 'loading') return
-  // 1) 命中缓存 → 直接使用，秒开
+  // 探测本地视频的真实存在性：Content-Type 以 video/ 开头才算存在
+  let exists = false
+  try {
+    const res = await fetch(video.videoSrc, { method: 'HEAD' })
+    const type = (res.headers.get('content-type') || '').toLowerCase()
+    exists = type.startsWith('video/')
+  } catch (e) { exists = false }
+  if (!exists) {
+    // 本地视频已删除 → 撤销缓存封面，仅保留占位（不再显示旧封面/远程兜底）
+    try { localStorage.removeItem(COVER_CACHE_KEY(index)) } catch (e) {}
+    coverData.delete(index)
+    coverStatus.set(index, 'failed')
+    return
+  }
+  // 视频存在：1) 命中缓存 → 秒开；2) 无缓存 → 进入抽帧队列（串行处理大视频）
   const cached = loadCoverCache(index)
   if (cached) {
     coverData.set(index, cached)
     coverStatus.set(index, 'extracted')
     return
   }
-  // 2) 无缓存 → 进入抽帧队列（串行处理，避免多路大视频并发解码卡顿）
   coverStatus.set(index, 'extracting')
   enqueueExtract(index)
 }
@@ -579,15 +595,8 @@ const onExtractVideoError = (index, video) => {
   finishExtract(index)
   // 抽帧成功后在清理 src 时触发的"空源"错误：封面已生成，直接忽略，不覆盖
   if (coverStatus.get(index) === 'extracted') return
-  // 如果远程 fallbackSrc 存在，试试从远程视频抽帧（可能很慢但结果好）
-  if (video.fallbackSrc && coverStatus.get(index) !== 'fallback-src-try') {
-    coverStatus.set(index, 'fallback-src-try')
-    // 这里不再强制，避免 CORS + 跨域 canvas 污染。改为直接用 fallbackPoster
-    coverData.set(index, video.fallbackPoster || '')
-    coverStatus.set(index, video.fallbackPoster ? 'fallback' : 'failed')
-  } else {
-    coverStatus.set(index, 'failed')
-  }
+  // 本地 mp4 不存在 → 封面保持为空（占位），不加载任何远程兜底封面
+  coverStatus.set(index, 'failed')
 }
 
 const openVideo = async (index) => {
