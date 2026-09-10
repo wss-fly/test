@@ -39,7 +39,7 @@ public class VideoController {
 
     @PutMapping
     public R<Void> update(@RequestBody Video video) {
-        boolean success = videoService.update(video);
+        boolean success = videoService.update(video);   
         return success ? R.ok() : R.fail("更新失败");
     }
 

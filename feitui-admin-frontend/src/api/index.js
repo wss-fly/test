@@ -32,6 +32,7 @@ export const getVideoAdminPage = (params) => request({ url: '/admin/video/page',
 export const createVideo = (data) => request({ url: '/admin/video', method: 'post', data })
 export const updateVideo = (id, data) => request({ url: `/admin/video/${id}`, method: 'put', data })
 export const deleteVideo = (id) => request({ url: `/admin/video/${id}`, method: 'delete' })
+export const swapVideo = (idA, idB) => request({ url: '/admin/video/swap', method: 'post', params: { idA, idB } })
 
 // 阿里云 OSS 直传：获取预签名上传地址
 export const getOssPresign = (data) => request({ url: '/admin/oss/presign', method: 'post', data })

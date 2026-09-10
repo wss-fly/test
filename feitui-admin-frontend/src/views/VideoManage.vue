@@ -101,10 +101,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getVideoAdminPage, createVideo, updateVideo, deleteVideo, getOssPresign } from '@/api'
+import { getVideoAdminPage, createVideo, updateVideo, deleteVideo, swapVideo, getOssPresign } from '@/api'
 
 const list = ref([])
 const total = ref(0)
@@ -204,6 +204,48 @@ function openEdit(row) {
   dialogVisible.value = true
 }
 
+// 秒 → mm:ss（超过 1 小时 → hh:mm:ss），向下取整与播放器时间轴一致
+function formatDuration(sec) {
+  if (!isFinite(sec) || sec <= 0) return ''
+  const s = Math.floor(sec)
+  const p = (n) => String(n).padStart(2, '0')
+  const hh = Math.floor(s / 3600)
+  const mm = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  return hh > 0 ? `${hh}:${p(mm)}:${p(ss)}` : `${mm}:${p(ss)}`
+}
+
+// 用隐藏 video 探测真实时长（仅读 metadata，不涉及 canvas，跨域 GET 即可）
+function probeDuration(url) {
+  if (!url) return
+  const v = document.createElement('video')
+  let done = false
+  const finish = () => {
+    if (done) return
+    done = true
+    v.removeAttribute('src')
+    v.load()
+    v.remove()
+  }
+  v.addEventListener('loadedmetadata', () => {
+    form.duration = formatDuration(v.duration)
+    finish()
+  })
+  v.addEventListener('error', finish)
+  v.preload = 'metadata'
+  v.muted = true
+  v.src = url
+  document.body.appendChild(v)
+}
+
+// 弹窗内一旦填入/修改视频地址，自动探测真实时长（已有值则不覆盖）
+watch(
+  () => form.videoUrl,
+  (nv) => {
+    if (dialogVisible.value && nv && !form.duration) probeDuration(nv)
+  }
+)
+
 function handleSave() {
   formRef.value.validate(async (valid) => {
     if (!valid) return
@@ -221,32 +263,15 @@ function handleSave() {
   })
 }
 
-// 上移/下移：与相邻行交换 sort 并保存，刷新后展示顺序随之变化
-function toPayload(row) {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    videoUrl: row.videoUrl,
-    coverImage: row.coverImage,
-    duration: row.duration,
-    sort: row.sort ?? 0,
-    status: row.status ?? 1
-  }
-}
-
+// 上移/下移：调用后端交换顺序与主键（一次完成 sort 与 id 的互换），后端保证 ID 连续
 async function moveRow(index, dir) {
   const target = index + dir
   if (target < 0 || target >= list.value.length) return
   const cur = list.value[index]
   const tgt = list.value[target]
-  const curSort = cur.sort ?? 0
-  cur.sort = tgt.sort ?? 0
-  tgt.sort = curSort
   try {
-    await updateVideo(cur.id, toPayload(cur))
-    await updateVideo(tgt.id, toPayload(tgt))
-    ElMessage.success('排序已调整')
+    await swapVideo(cur.id, tgt.id)
+    ElMessage.success('顺序已调整')
     loadList()
   } catch (e) {
     loadList()

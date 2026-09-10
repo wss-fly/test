@@ -57,4 +57,28 @@
     <update id="shiftIdDown">
         UPDATE t_video SET id = id - 1 WHERE id > #{id}
     </update>
+
+    <select id="selectSortById" resultType="java.lang.Integer">
+        SELECT sort FROM t_video WHERE id = #{id}
+    </select>
+
+    <update id="updateSort">
+        UPDATE t_video SET sort = #{sort} WHERE id = #{id}
+    </update>
+
+    <update id="bumpId">
+        UPDATE t_video SET id = id + #{big} WHERE id IN (#{a}, #{b})
+    </update>
+
+    <update id="setId">
+        UPDATE t_video SET id = #{to} WHERE id = #{from}
+    </update>
+
+    <select id="countBySort" resultType="int">
+        SELECT COUNT(*) FROM t_video WHERE sort = #{sort}
+    </select>
+
+    <select id="countBySortExcept" resultType="int">
+        SELECT COUNT(*) FROM t_video WHERE sort = #{sort} AND id != #{id}
+    </select>
 </mapper>

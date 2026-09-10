@@ -1,5 +1,6 @@
 package com.feitui.service.impl;
 
+import com.feitui.admin.service.OssService;
 import com.feitui.entity.Video;
 import com.feitui.mapper.VideoMapper;
 import com.feitui.service.VideoService;
@@ -17,9 +18,11 @@ import java.util.Set;
 public class VideoServiceImpl implements VideoService {
 
     private final VideoMapper videoMapper;
+    private final OssService ossService;
 
-    public VideoServiceImpl(VideoMapper videoMapper) {
+    public VideoServiceImpl(VideoMapper videoMapper, OssService ossService) {
         this.videoMapper = videoMapper;
+        this.ossService = ossService;
     }
 
     @Override
@@ -66,11 +69,52 @@ public class VideoServiceImpl implements VideoService {
     @Override
     @Transactional
     public boolean delete(Long id) {
+        Video v = videoMapper.selectById(id);
         int n = videoMapper.deleteById(id);
         if (n > 0) {
             // 删除后紧凑重排：后面所有记录 id 前移，保证 id 连续无空洞
             videoMapper.shiftIdDown(id);
+            // 同步删除 OSS 上的视频/封面文件（仅删属于本 bucket 的对象，外部链接忽略）。
+            // OSS 删除失败不阻断 DB 删除，避免记录删掉却留文件导致前台空壳。
+            if (v != null) {
+                safeDeleteOss(v.getVideoUrl());
+                safeDeleteOss(v.getCoverImage());
+            }
         }
         return n > 0;
+    }
+
+    private void safeDeleteOss(String url) {
+        try {
+            ossService.deleteObjectByUrl(url);
+        } catch (Exception ignored) {
+            // 忽略：OSS 删除尽力而为，不影响记录删除
+        }
+    }
+
+    @Override
+    @Transactional
+    public void reorderByIds(Long idA, Long idB) {
+        Integer sortA = videoMapper.selectSortById(idA);
+        Integer sortB = videoMapper.selectSortById(idB);
+        if (sortA == null || sortB == null) {
+            throw new RuntimeException("欲调整的视频不存在");
+        }
+        // 1) 交换排序号，展示顺序随之变化
+        videoMapper.updateSort(idA, sortB);
+        videoMapper.updateSort(idB, sortA);
+        // 2) 交换主键 id，使 ID 列跟随显示顺序保持连续
+        long BIG = 1_000_000_000L;
+        videoMapper.bumpId(idA, idB, BIG);
+        videoMapper.setId(idA.longValue() + BIG, idB);
+        videoMapper.setId(idB.longValue() + BIG, idA);
+    }
+
+    @Override
+    public boolean existSort(Integer sort, Long editId) {
+        if (sort == null) return false;
+        return editId == null
+                ? videoMapper.countBySort(sort) > 0
+                : videoMapper.countBySortExcept(editId, sort) > 0;
     }
 }

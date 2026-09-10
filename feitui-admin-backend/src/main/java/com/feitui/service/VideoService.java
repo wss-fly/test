@@ -11,4 +11,8 @@ public interface VideoService {
     Video save(Video video);
     boolean update(Video video);
     boolean delete(Long id);
+    // 交换两行的顺序与主键，使 ID 跟随显示顺序保持连续
+    void reorderByIds(Long idA, Long idB);
+    // 排序号是否存在（editId 非空时排除该记录自身）
+    boolean existSort(Integer sort, Long editId);
 }

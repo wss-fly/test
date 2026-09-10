@@ -17,7 +17,7 @@
     <!-- Main Video Player -->
     <section class="main-video-section">
       <div class="section-container">
-        <div class="video-player-main">
+        <div v-if="videoList.length" class="video-player-main">
           <div class="player-wrapper"
                @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay"
                @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
@@ -77,6 +77,7 @@
           </div>
         </div>
       </div>
+      <div v-if="!videoList.length" class="empty-tip">{{ t('video.emptyTip') }}</div>
     </section>
 
     <!-- Video List -->
@@ -87,7 +88,7 @@
           <p>{{ t('video.videoListDesc') }}</p>
         </div>
         
-        <div class="video-grid">
+        <div v-if="videoList.length" class="video-grid">
           <div v-for="(video, index) in videoList" :key="index"
                class="video-card"
                :class="{ active: currentIndex === index }"
@@ -264,106 +265,22 @@ const videoRef = ref(null)
 // 弹窗视频是否就绪（打开时先展示封面，元数据加载完成才自动播放，避免点开即解码大视频导致卡顿）
 const videoReady = ref(false)
 
-const currentVideo = computed(() => videoList.value[currentIndex.value])
-
-// 视频源（支持两种方式：1.放入 public/videos/ 下的本地文件，用 /videos/xxx.mp4 引用；2.填远程 HTTP 链接）
-// 本地视频使用说明：把 mp4 文件复制到 feitui-frontend/public/videos/ 目录，例如命名为 1.mp4、2.mp4 ...
-// 如果没有本地视频，将默认使用远程示例视频（可随时替换）
-const LOCAL_VIDEO_PREFIX = '/videos/'
-const DEMO_FALLBACK = {
-  1: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg' },
-  2: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg' },
-  3: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg' },
-  4: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg' },
-  5: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg' },
-  6: { src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-       poster: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg' }
-}
+const currentVideo = computed(() => videoList.value[currentIndex.value] || { title: '', description: '' })
 
 const videoList = computed(() => {
-  // 优先使用后端 /video/list 返回的视频（视频文件存放在阿里云OSS，地址由 t_video 表管理）
-  if (remoteVideos.value.length) {
-    return remoteVideos.value.map((it) => ({
-      title: it.title || '',
-      description: it.description || '',
-      badge: '',
-      videoSrc: it.videoUrl,
-      // 若后台没配封面图，poster 置空 → 走抽帧逻辑从视频本身取封面（前提是 OSS 已开 CORS）
-      poster: it.coverImage || '',
-      fallbackSrc: null,
-      fallbackPoster: null,
-      // 优先用真实时长（displayDuration 会先读抽帧得到的秒数），无数据时用表里的时长文案
-      duration: it.duration || ''
-    }))
-  }
-  // 回退：无接口数据（开发/测试/接口异常）时使用本地 public/videos + i18n 文案
-  return [
-  {
-    title: t('video.video1Title'),
-    description: t('video.video1Desc'),
-    duration: t('video.video1Duration'),
-    badge: t('video.video1Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}1.mp4`,
-    fallbackSrc: DEMO_FALLBACK['1'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}1.jpg`,
-    fallbackPoster: DEMO_FALLBACK['1'].poster
-  },
-  {
-    title: t('video.video2Title'),
-    description: t('video.video2Desc'),
-    duration: t('video.video2Duration'),
-    badge: t('video.video2Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}2.mp4`,
-    fallbackSrc: DEMO_FALLBACK['2'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}2.jpg`,
-    fallbackPoster: DEMO_FALLBACK['2'].poster
-  },
-  {
-    title: t('video.video3Title'),
-    description: t('video.video3Desc'),
-    duration: t('video.video3Duration'),
-    badge: t('video.video3Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}3.mp4`,
-    fallbackSrc: DEMO_FALLBACK['3'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}3.jpg`,
-    fallbackPoster: DEMO_FALLBACK['3'].poster
-  },
-  {
-    title: t('video.video4Title'),
-    description: t('video.video4Desc'),
-    duration: t('video.video4Duration'),
-    badge: t('video.video4Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}4.mp4`,
-    fallbackSrc: DEMO_FALLBACK['4'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}4.jpg`,
-    fallbackPoster: DEMO_FALLBACK['4'].poster
-  },
-  {
-    title: t('video.video5Title'),
-    description: t('video.video5Desc'),
-    duration: t('video.video5Duration'),
-    badge: t('video.video5Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}5.mp4`,
-    fallbackSrc: DEMO_FALLBACK['5'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}5.jpg`,
-    fallbackPoster: DEMO_FALLBACK['5'].poster
-  },
-  {
-    title: t('video.video6Title'),
-    description: t('video.video6Desc'),
-    duration: t('video.video6Duration'),
-    badge: t('video.video6Badge'),
-    videoSrc: `${LOCAL_VIDEO_PREFIX}6.mp4`,
-    fallbackSrc: DEMO_FALLBACK['6'].src,
-    poster: `${LOCAL_VIDEO_PREFIX}6.jpg`,
-    fallbackPoster: DEMO_FALLBACK['6'].poster
-  }
-  ]
+  // 仅以后端 /video/list 返回的视频为准（视频文件存放在阿里云OSS，地址由 t_video 表管理）
+  return remoteVideos.value.map((it) => ({
+    title: it.title || '',
+    description: it.description || '',
+    badge: '',
+    videoSrc: it.videoUrl,
+    // 若后台没配封面图，poster 置空 → 走抽帧逻辑从视频本身取封面（前提是 OSS 已开 CORS）
+    poster: it.coverImage || '',
+    fallbackSrc: null,
+    fallbackPoster: null,
+    // 优先用真实时长（displayDuration 会先读抽帧得到的秒数），无数据时用表里的时长文案
+    duration: it.duration || ''
+  }))
 })
 
 const walkthroughSteps = computed(() => [
@@ -707,7 +624,7 @@ const onTouchEnd = (e) => {
 }
 
 onMounted(async () => {
-  // 优先拉取后端 /video/list（视频存于阿里云OSS）；失败/为空则回退本地配置
+  // 拉取后端 /video/list（视频存于阿里云OSS）；失败/为空页面显示空状态，不再回退本地演示视频
   try {
     const res = await getVideoList()
     if (res && res.code === 200 && Array.isArray(res.data) && res.data.length) {
@@ -838,6 +755,13 @@ const handleDialogClose = () => {
   position: relative;
   z-index: 1;
   background: #ffffff;
+}
+
+.empty-tip {
+  padding: 90px 20px;
+  text-align: center;
+  font-size: 15px;
+  color: #8a94a6;
 }
 
 .video-player-main {

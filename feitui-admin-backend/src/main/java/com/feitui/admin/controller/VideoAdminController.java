@@ -30,6 +30,9 @@ public class VideoAdminController {
             return R.fail("视频地址不能为空");
         }
         if (video.getSort() == null) video.setSort(0);
+        if (videoService.existSort(video.getSort(), null)) {
+            return R.fail("排序号 " + video.getSort() + " 已存在，请更换");
+        }
         if (video.getStatus() == null) video.setStatus(1);
         videoService.save(video);
         return R.ok();
@@ -41,6 +44,9 @@ public class VideoAdminController {
         if (video.getVideoUrl() == null || video.getVideoUrl().isBlank()) {
             return R.fail("视频地址不能为空");
         }
+        if (video.getSort() != null && videoService.existSort(video.getSort(), id)) {
+            return R.fail("排序号 " + video.getSort() + " 已存在，请更换");
+        }
         video.setId(id);
         videoService.update(video);
         return R.ok();
@@ -50,6 +56,13 @@ public class VideoAdminController {
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         videoService.delete(id);
+        return R.ok();
+    }
+
+    // 上移/下移：交换两行视频的顺序与主键，保证 ID 连续无空洞
+    @PostMapping("/swap")
+    public R<Void> swap(@RequestParam Long idA, @RequestParam Long idB) {
+        videoService.reorderByIds(idA, idB);
         return R.ok();
     }
 }

@@ -18,4 +18,13 @@ public interface VideoMapper {
     List<Integer> selectIds();
     // 删除后紧凑重排：把 id 大于被删 id 的所有行往前挪一位
     int shiftIdDown(@Param("id") Long id);
+    // ---- 上移/下移排序 ----
+    Integer selectSortById(@Param("id") Long id);
+    int updateSort(@Param("id") Long id, @Param("sort") Integer sort);
+    // 交换两行的主键 id（先整体加一个大步长偏移避免主键冲突，再分别归位）
+    int bumpId(@Param("a") Long a, @Param("b") Long b, @Param("big") long big);
+    int setId(@Param("from") long from, @Param("to") Long to);
+    // ---- 排序号唯一性校验 ----
+    int countBySort(@Param("sort") Integer sort);
+    int countBySortExcept(@Param("id") Long id, @Param("sort") Integer sort);
 }

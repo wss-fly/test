@@ -119,6 +119,39 @@ public class OssService {
         }
     }
 
+    /**
+     * 按公网 URL 删除 OSS 对象（用于后台删除视频记录时同步清理云端文件）。
+     * 仅当 URL 的域名属于本 bucket（endpoint 域名或配置的 public-domain）时才删除，
+     * 外部链接（非 OSS）直接忽略，避免误删别处资源。
+     */
+    public void deleteObjectByUrl(String objectUrl) {
+        if (!StringUtils.hasText(objectUrl) || !configured()) return;
+        try {
+            URL u = new URL(objectUrl);
+            String host = u.getHost();
+            boolean trusted = false;
+            if (StringUtils.hasText(endpoint) && host.equalsIgnoreCase(bucket + "." + endpoint)) {
+                trusted = true;
+            }
+            if (StringUtils.hasText(publicDomain) && host.equalsIgnoreCase(publicDomain)) {
+                trusted = true;
+            }
+            if (!trusted) return;
+            String key = u.getPath();
+            if (key.startsWith("/")) key = key.substring(1);
+            if (!StringUtils.hasText(key)) return;
+
+            OSS client = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+            try {
+                client.deleteObject(bucket, key);
+            } finally {
+                client.shutdown();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("删除 OSS 文件失败：" + e.getMessage());
+        }
+    }
+
     private static String ext(String filename) {
         if (filename == null) return "mp4";
         int idx = filename.lastIndexOf('.');
