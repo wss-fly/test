@@ -115,7 +115,7 @@
                 class="extract-video"
                 crossorigin="anonymous"
                 :src="video.videoSrc"
-                preload="metadata"
+                preload="auto"
                 muted
                 playsinline
                 @loadeddata="onVideoLoadedForFrame(index)"
@@ -535,7 +535,17 @@ const onCoverDetectorError = async (index, video) => {
   const current = coverStatus.get(index)
   // 如果已经试过 fallback 或已经抽帧，不要再重试
   if (current && current !== 'loading') return
-  // 探测本地视频的真实存在性：Content-Type 以 video/ 开头才算存在
+  // 缓存优先：本地已存抽帧封面直接恢复，避免每次切换都依赖 OSS HEAD 探测，
+  // 导致跨域预检/网络偶发失败时误判"视频不存在"而删掉封面
+  const cached = loadCoverCache(index)
+  if (cached) {
+    coverData.set(index, cached)
+    coverStatus.set(index, 'extracted')
+    return
+  }
+  // 无缓存才探测本地视频是否真实存在：
+  // 注意 dev 环境 Vite 对缺失静态资源会返回 index.html(200, text/html)，而非 404，
+  // 因此不能用 HTTP 状态、也不能靠 <video> 的 error 判断，必须检查响应 Content-Type。
   let exists = false
   try {
     const res = await fetch(video.videoSrc, { method: 'HEAD' })
@@ -543,19 +553,12 @@ const onCoverDetectorError = async (index, video) => {
     exists = type.startsWith('video/')
   } catch (e) { exists = false }
   if (!exists) {
-    // 本地视频已删除 → 撤销缓存封面，仅保留占位（不再显示旧封面/远程兜底）
-    try { localStorage.removeItem(COVER_CACHE_KEY(index)) } catch (e) {}
+    // 视频已删除 → 撤销封面，仅保留占位
     coverData.delete(index)
     coverStatus.set(index, 'failed')
     return
   }
-  // 视频存在：1) 命中缓存 → 秒开；2) 无缓存 → 进入抽帧队列（串行处理大视频）
-  const cached = loadCoverCache(index)
-  if (cached) {
-    coverData.set(index, cached)
-    coverStatus.set(index, 'extracted')
-    return
-  }
+  // 视频存在：进入抽帧队列（串行处理大视频）
   coverStatus.set(index, 'extracting')
   enqueueExtract(index)
 }

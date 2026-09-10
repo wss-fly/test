@@ -32,8 +32,10 @@
         <el-table-column label="更新时间" prop="updateTime" width="170">
           <template #default="{ row }">{{ row.updateTime || '—' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
+        <el-table-column label="操作" width="260" fixed="right">
+          <template #default="{ row, $index }">
+            <el-button link type="primary" size="small" :disabled="$index === 0" @click="moveRow($index, -1)">上移</el-button>
+            <el-button link type="primary" size="small" :disabled="$index === list.length - 1" @click="moveRow($index, 1)">下移</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -217,6 +219,38 @@ function handleSave() {
       loadList()
     } catch (e) {}
   })
+}
+
+// 上移/下移：与相邻行交换 sort 并保存，刷新后展示顺序随之变化
+function toPayload(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    videoUrl: row.videoUrl,
+    coverImage: row.coverImage,
+    duration: row.duration,
+    sort: row.sort ?? 0,
+    status: row.status ?? 1
+  }
+}
+
+async function moveRow(index, dir) {
+  const target = index + dir
+  if (target < 0 || target >= list.value.length) return
+  const cur = list.value[index]
+  const tgt = list.value[target]
+  const curSort = cur.sort ?? 0
+  cur.sort = tgt.sort ?? 0
+  tgt.sort = curSort
+  try {
+    await updateVideo(cur.id, toPayload(cur))
+    await updateVideo(tgt.id, toPayload(tgt))
+    ElMessage.success('排序已调整')
+    loadList()
+  } catch (e) {
+    loadList()
+  }
 }
 
 function handleDelete(row) {
