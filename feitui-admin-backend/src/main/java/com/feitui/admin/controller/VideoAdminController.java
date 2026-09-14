@@ -6,6 +6,8 @@ import com.feitui.service.VideoService;
 import com.github.pagehelper.PageInfo;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/admin/video")
 public class VideoAdminController {
@@ -56,6 +58,13 @@ public class VideoAdminController {
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         videoService.delete(id);
+        return R.ok();
+    }
+
+    // 批量删除视频
+    @PostMapping("/batch")
+    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+        videoService.deleteBatch(ids);
         return R.ok();
     }
 

@@ -6,6 +6,7 @@ import com.feitui.admin.service.ContactService;
 import com.github.pagehelper.PageInfo;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -45,5 +46,11 @@ public class AdminContactController {
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         return contactService.deleteById(id) ? R.ok() : R.fail("删除失败");
+    }
+
+    @PostMapping("/batch")
+    public R<Void> deleteBatch(@RequestBody List<Long> ids) {
+        contactService.deleteBatch(ids);
+        return R.ok();
     }
 }

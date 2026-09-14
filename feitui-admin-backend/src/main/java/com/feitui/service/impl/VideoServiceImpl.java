@@ -6,19 +6,24 @@ import com.feitui.mapper.VideoMapper;
 import com.feitui.service.VideoService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class VideoServiceImpl implements VideoService {
 
     private final VideoMapper videoMapper;
     private final OssService ossService;
+    private static final Logger log = LoggerFactory.getLogger(VideoServiceImpl.class);
 
     public VideoServiceImpl(VideoMapper videoMapper, OssService ossService) {
         this.videoMapper = videoMapper;
@@ -84,11 +89,25 @@ public class VideoServiceImpl implements VideoService {
         return n > 0;
     }
 
+    @Override
+    @Transactional
+    public void deleteBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        // 按 id 降序逐个删除（复用单条删除逻辑：含 OSS 清理与 ID 紧凑重排）。
+        // 降序删除使 shiftIdDown 只会前移已删除行之后的记录，不会影响后续待删行。
+        List<Long> sorted = ids.stream().distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+        for (Long id : sorted) {
+            delete(id);
+        }
+    }
+
     private void safeDeleteOss(String url) {
+        if (url == null || url.isBlank()) return;
         try {
             ossService.deleteObjectByUrl(url);
-        } catch (Exception ignored) {
-            // 忽略：OSS 删除尽力而为，不影响记录删除
+        } catch (Exception e) {
+            // 记录日志便于排查，但不阻断记录删除
+            log.warn("同步删除 OSS 文件失败（请手动清理）：{} - {}", url, e.getMessage());
         }
     }
 

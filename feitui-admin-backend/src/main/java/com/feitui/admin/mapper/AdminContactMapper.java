@@ -11,6 +11,7 @@ public interface AdminContactMapper {
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
     int updateRemark(@Param("id") Long id, @Param("remark") String remark);
     int deleteById(@Param("id") Long id);
+    int deleteBatch(@Param("ids") List<Long> ids);
     Long totalCount();
     Long todayCount(@Param("today") String today);
     List<Contact> recentList(@Param("limit") int limit);

@@ -6,12 +6,16 @@
           <span class="panel-title">视频管理</span>
           <div class="header-actions">
             <span class="tip-text">视频文件放在阿里云OSS，此处仅管理云端的 URL、标题与排序，保存后推广网站立即生效。</span>
+            <el-button type="danger" plain :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+              批量删除<template v-if="selectedIds.length">（{{ selectedIds.length }}）</template>
+            </el-button>
             <el-button type="primary" :icon="Plus" @click="openCreate">新增视频</el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe @selection-change="onSelectionChange">
+        <el-table-column type="selection" width="50" />
         <el-table-column label="ID" prop="id" width="70" />
         <el-table-column label="排序" prop="sort" width="80" />
         <el-table-column label="标题" prop="title" min-width="140" />
@@ -102,14 +106,19 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getVideoAdminPage, createVideo, updateVideo, deleteVideo, swapVideo, getOssPresign } from '@/api'
+import { getVideoAdminPage, createVideo, updateVideo, deleteVideo, deleteVideoBatch, swapVideo, getOssPresign } from '@/api'
 
 const list = ref([])
 const total = ref(0)
 const loading = ref(false)
 const query = reactive({ page: 1, size: 10 })
+const selectedIds = ref([])
+
+function onSelectionChange(rows) {
+  selectedIds.value = rows.map((r) => r.id)
+}
 
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -132,17 +141,28 @@ function triggerFile(which) {
   fileInput.value && fileInput.value.click()
 }
 
+const VIDEO_EXTS = ['mp4', 'webm', 'mov', 'm4v', 'avi', 'ogg']
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+function extOf(name) { const i = name.lastIndexOf('.'); return i < 0 ? '' : name.substring(i + 1).toLowerCase() }
+
 function onFileChange(e) {
   const file = e.target.files && e.target.files[0]
   e.target.value = ''
-  if (file) uploadToOss(currentWhich.value, file)
+  if (!file) return
+  const ext = extOf(file.name)
+  const isVideo = VIDEO_EXTS.includes(ext)
+  const isImage = IMAGE_EXTS.includes(ext)
+  // 视频栏只能传视频、封面栏只能传图片，避免视频/封面地址错位
+  if (currentWhich.value === 'video' && !isVideo) { ElMessage.error('视频栏仅支持上传视频文件（mp4/webm/mov/m4v/avi/ogg）'); return }
+  if (currentWhich.value === 'cover' && !isImage) { ElMessage.error('封面栏仅支持上传图片文件（jpg/jpeg/png/webp/gif）'); return }
+  uploadToOss(currentWhich.value, file)
 }
 
 async function uploadToOss(which, file) {
   uploading.value = which
   uploadPercent.value = 0
   try {
-    const res = await getOssPresign({ filename: file.name })
+    const res = await getOssPresign({ filename: file.name, category: which })
     if (res.code !== 200) {
       ElMessage.error(res.message || '获取上传地址失败')
       return
@@ -287,6 +307,23 @@ function handleDelete(row) {
     try {
       await deleteVideo(row.id)
       ElMessage.success('删除成功')
+      loadList()
+    } catch (e) {}
+  }).catch(() => {})
+}
+
+function handleBatchDelete() {
+  const n = selectedIds.value.length
+  if (!n) return
+  ElMessageBox.confirm(`确定删除选中的 ${n} 个视频吗？将同步删除其 OSS 视频与封面文件，删除后不可恢复。`, '批量删除', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await deleteVideoBatch(selectedIds.value)
+      ElMessage.success('批量删除成功')
+      selectedIds.value = []
       loadList()
     } catch (e) {}
   }).catch(() => {})

@@ -25,7 +25,7 @@ public class OssController {
     @PostMapping("/presign")
     public R<Map<String, String>> presign(@RequestBody Map<String, String> body) {
         try {
-            return R.ok(ossService.createUploadUrl(body.get("filename")));
+            return R.ok(ossService.createUploadUrl(body.get("filename"), body.get("category")));
         } catch (IllegalStateException e) {
             return R.fail(e.getMessage());
         }

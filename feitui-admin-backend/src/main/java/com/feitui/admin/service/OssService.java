@@ -3,6 +3,7 @@ package com.feitui.admin.service;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.HttpMethod;
+import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.GeneratePresignedUrlRequest;
 import com.aliyun.oss.model.SetBucketCORSRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,7 @@ public class OssService {
 
     private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("yyyyMM");
     private static final java.util.Set<String> VIDEO_EXTS = java.util.Set.of("mp4", "webm", "mov", "m4v", "avi", "ogg");
+    private static final java.util.Set<String> IMAGE_EXTS = java.util.Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     public boolean configured() {
         return StringUtils.hasText(endpoint) && StringUtils.hasText(bucket)
@@ -80,15 +82,25 @@ public class OssService {
 
     /**
      * 生成某个待上传文件的预签名 URL 和最终公网访问 URL。
-     * 文件名仅用于取扩展名分类（视频/封面）。
+     * @param category 上传用途：video=视频文件，cover=封面图片；按用途严格校验扩展名，视频栏/封面上传栏互不混用
      */
-    public Map<String, String> createUploadUrl(String filename) {
+    public Map<String, String> createUploadUrl(String filename, String category) {
         if (!configured()) {
             throw new IllegalStateException("请先在 application.yml 配置阿里云 OSS（endpoint/bucket/access-key-id/access-key-secret）");
         }
         String ext = ext(filename);
-        String category = VIDEO_EXTS.contains(ext) ? "videos" : "covers";
-        String key = category + "/" + LocalDateTime.now().format(MONTH) + "/" + UUID.randomUUID().toString().replace("-", "") + "." + ext;
+        boolean isVideo = "video".equalsIgnoreCase(category);
+        if (isVideo) {
+            if (!VIDEO_EXTS.contains(ext)) {
+                throw new IllegalStateException("视频栏仅支持上传视频文件（mp4/webm/mov/m4v/avi/ogg）");
+            }
+        } else {
+            if (!IMAGE_EXTS.contains(ext)) {
+                throw new IllegalStateException("封面栏仅支持上传图片文件（jpg/jpeg/png/webp/gif）");
+            }
+        }
+        String contentCategory = VIDEO_EXTS.contains(ext) ? "videos" : "covers";
+        String key = contentCategory + "/" + LocalDateTime.now().format(MONTH) + "/" + UUID.randomUUID().toString().replace("-", "") + "." + ext;
         // Content-Type 写入签名并回传前端，上传时带上同名 header，OSS 才能存成正确 MIME（video 前台才能播）
         String contentType = contentType(ext);
 
@@ -147,8 +159,20 @@ public class OssService {
             } finally {
                 client.shutdown();
             }
+        } catch (OSSException e) {
+            // 对象本就不存在视为已清理成功，其余 OSS 错误向上抛，便于上排查
+            if ("NoSuchKey".equals(e.getErrorCode())) return;
+            throw new RuntimeException("删除 OSS 文件失败：" + keyLabel(objectUrl) + " - " + e.getErrorMessage());
         } catch (Exception e) {
-            throw new RuntimeException("删除 OSS 文件失败：" + e.getMessage());
+            throw new RuntimeException("删除 OSS 文件失败：" + keyLabel(objectUrl) + " - " + e.getMessage());
+        }
+    }
+
+    private static String keyLabel(String url) {
+        try {
+            return new URL(url).getPath();
+        } catch (Exception e) {
+            return url;
         }
     }
 

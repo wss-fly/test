@@ -13,11 +13,16 @@
             <el-input v-model="query.keyword" placeholder="搜索姓名/电话/邮箱/需求" clearable size="default" style="width: 260px" @keyup.enter="handleSearch" @clear="handleSearch" />
             <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
             <el-button :icon="Refresh" @click="loadList">刷新</el-button>
+            <el-divider direction="vertical" />
+            <el-button type="danger" :icon="Delete" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+              批量删除<template v-if="selectedIds.length">（{{ selectedIds.length }}）</template>
+            </el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe @selection-change="onSelectionChange">
+        <el-table-column type="selection" width="50" />
         <el-table-column label="咨询人" min-width="110">
           <template #default="{ row }">
             <div class="person">
@@ -92,14 +97,19 @@
 
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getContactPage, updateContactStatus, updateContactRemark, deleteContact } from '@/api'
+import { getContactPage, updateContactStatus, updateContactRemark, deleteContact, deleteContactBatch } from '@/api'
 
 const list = ref([])
 const total = ref(0)
 const loading = ref(false)
 const query = reactive({ page: 1, size: 10, keyword: '', status: null })
+const selectedIds = ref([])
+
+function onSelectionChange(rows) {
+  selectedIds.value = rows.map((r) => r.id)
+}
 
 const detailVisible = ref(false)
 const detail = ref({})
@@ -155,6 +165,19 @@ function handleDelete(row) {
   }).then(async () => {
     await deleteContact(row.id)
     ElMessage.success('删除成功')
+    loadList()
+  }).catch(() => {})
+}
+
+function handleBatchDelete() {
+  const n = selectedIds.value.length
+  if (!n) return
+  ElMessageBox.confirm(`确定删除选中的 ${n} 条咨询记录吗？删除后不可恢复。`, '批量删除', {
+    type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'
+  }).then(async () => {
+    await deleteContactBatch(selectedIds.value)
+    ElMessage.success('批量删除成功')
+    selectedIds.value = []
     loadList()
   }).catch(() => {})
 }

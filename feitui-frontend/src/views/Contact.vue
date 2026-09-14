@@ -319,6 +319,21 @@ const formData = reactive({
   requirement: ''
 })
 
+// 校验手机号 / WhatsApp 格式
+// 兼容：E.164 国际格式（+ 国家码+号码）、或大陆手机号（11 位且以 1 开头）
+const validatePhone = (rule, value, callback) => {
+  if (!value) return callback()
+  // 去除空格、破折号、括号等分隔符，仅保留数字与可能的 + 号
+  const clean = String(value).replace(/[\s\-()]/g, '')
+  const isE164 = /^\+[1-9]\d{6,14}$/.test(clean) // WhatsApp / 国际格式，如 +8619115289951
+  const isPlain = /^1\d{10}$/.test(clean) // 大陆手机号：11 位且以 1 开头，如 19115289951
+  if (isE164 || isPlain) {
+    callback()
+  } else {
+    callback(new Error('请输入正确的手机号或WhatsApp'))
+  }
+}
+
 const formRules = {
   name: [
     { required: true, message: '请输入您的姓名', trigger: 'blur' },
@@ -326,7 +341,7 @@ const formRules = {
   ],
   phone: [
     { required: true, message: '请输入手机号或WhatsApp', trigger: 'blur' },
-    { pattern: /^[\d\-+\s()]+$/, message: '请输入正确的联系方式', trigger: 'blur' }
+    { validator: validatePhone, trigger: 'blur' }
   ],
   requirement: [
     { min: 10, message: '请至少描述10个字的需求', trigger: 'blur' }

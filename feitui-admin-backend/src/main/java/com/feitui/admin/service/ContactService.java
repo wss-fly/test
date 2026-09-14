@@ -40,6 +40,11 @@ public class ContactService {
         return AdminContactMapper.deleteById(id) > 0;
     }
 
+    public int deleteBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
+        return AdminContactMapper.deleteBatch(ids);
+    }
+
     // 最近N天的咨询量趋势
     public List<Contact> recent(int limit) {
         return AdminContactMapper.recentList(limit);
