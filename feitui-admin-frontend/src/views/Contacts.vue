@@ -21,8 +21,8 @@
         </div>
       </template>
 
-      <el-table :data="list" v-loading="loading" stripe @selection-change="onSelectionChange">
-        <el-table-column type="selection" width="50" />
+      <el-table ref="tableRef" :data="list" v-loading="loading" stripe row-key="id" @selection-change="onSelectionChange">
+        <el-table-column type="selection" width="50" reserve-selection />
         <el-table-column label="咨询人" min-width="110">
           <template #default="{ row }">
             <div class="person">
@@ -104,6 +104,7 @@ import { getContactPage, updateContactStatus, updateContactRemark, deleteContact
 const list = ref([])
 const total = ref(0)
 const loading = ref(false)
+const tableRef = ref()
 const query = reactive({ page: 1, size: 10, keyword: '', status: null })
 const selectedIds = ref([])
 
@@ -178,6 +179,7 @@ function handleBatchDelete() {
     await deleteContactBatch(selectedIds.value)
     ElMessage.success('批量删除成功')
     selectedIds.value = []
+    tableRef.value?.clearSelection()
     loadList()
   }).catch(() => {})
 }
